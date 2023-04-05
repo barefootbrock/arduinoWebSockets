@@ -143,9 +143,10 @@ void WebSocketsServerCore::onValidateHttpHeader(
  * @param payload uint8_t *
  * @param length size_t
  * @param headerToPayload bool  (see sendFrame for more details)
+ * @param fin bool Is this the only/final frame?
  * @return true if ok
  */
-bool WebSocketsServerCore::sendTXT(uint8_t num, uint8_t * payload, size_t length, bool headerToPayload) {
+bool WebSocketsServerCore::sendTXT(uint8_t num, uint8_t * payload, size_t length, bool headerToPayload, bool fin) {
     if(num >= WEBSOCKETS_SERVER_CLIENT_MAX) {
         return false;
     }
@@ -154,7 +155,7 @@ bool WebSocketsServerCore::sendTXT(uint8_t num, uint8_t * payload, size_t length
     }
     WSclient_t * client = &_clients[num];
     if(clientIsConnected(client)) {
-        return sendFrame(client, WSop_text, payload, length, true, headerToPayload);
+        return sendFrame(client, WSop_text, payload, length, fin, headerToPayload);
     }
     return false;
 }
@@ -180,9 +181,10 @@ bool WebSocketsServerCore::sendTXT(uint8_t num, String & payload) {
  * @param payload uint8_t *
  * @param length size_t
  * @param headerToPayload bool  (see sendFrame for more details)
+ * @param fin bool Is this the only/final frame?
  * @return true if ok
  */
-bool WebSocketsServerCore::broadcastTXT(uint8_t * payload, size_t length, bool headerToPayload) {
+bool WebSocketsServerCore::broadcastTXT(uint8_t * payload, size_t length, bool headerToPayload, bool fin) {
     WSclient_t * client;
     bool ret = true;
     if(length == 0) {
@@ -192,7 +194,7 @@ bool WebSocketsServerCore::broadcastTXT(uint8_t * payload, size_t length, bool h
     for(uint8_t i = 0; i < WEBSOCKETS_SERVER_CLIENT_MAX; i++) {
         client = &_clients[i];
         if(clientIsConnected(client)) {
-            if(!sendFrame(client, WSop_text, payload, length, true, headerToPayload)) {
+            if(!sendFrame(client, WSop_text, payload, length, fin, headerToPayload)) {
                 ret = false;
             }
         }
@@ -223,15 +225,16 @@ bool WebSocketsServerCore::broadcastTXT(String & payload) {
  * @param payload uint8_t *
  * @param length size_t
  * @param headerToPayload bool  (see sendFrame for more details)
+ * @param fin bool Is this the only/final frame?
  * @return true if ok
  */
-bool WebSocketsServerCore::sendBIN(uint8_t num, uint8_t * payload, size_t length, bool headerToPayload) {
+bool WebSocketsServerCore::sendBIN(uint8_t num, uint8_t * payload, size_t length, bool headerToPayload, bool fin) {
     if(num >= WEBSOCKETS_SERVER_CLIENT_MAX) {
         return false;
     }
     WSclient_t * client = &_clients[num];
     if(clientIsConnected(client)) {
-        return sendFrame(client, WSop_binary, payload, length, true, headerToPayload);
+        return sendFrame(client, WSop_binary, payload, length, fin, headerToPayload);
     }
     return false;
 }
@@ -245,15 +248,16 @@ bool WebSocketsServerCore::sendBIN(uint8_t num, const uint8_t * payload, size_t 
  * @param payload uint8_t *
  * @param length size_t
  * @param headerToPayload bool  (see sendFrame for more details)
+ * @param fin bool Is this the only/final frame?
  * @return true if ok
  */
-bool WebSocketsServerCore::broadcastBIN(uint8_t * payload, size_t length, bool headerToPayload) {
+bool WebSocketsServerCore::broadcastBIN(uint8_t * payload, size_t length, bool headerToPayload, bool fin) {
     WSclient_t * client;
     bool ret = true;
     for(uint8_t i = 0; i < WEBSOCKETS_SERVER_CLIENT_MAX; i++) {
         client = &_clients[i];
         if(clientIsConnected(client)) {
-            if(!sendFrame(client, WSop_binary, payload, length, true, headerToPayload)) {
+            if(!sendFrame(client, WSop_binary, payload, length, fin, headerToPayload)) {
                 ret = false;
             }
         }
@@ -264,6 +268,58 @@ bool WebSocketsServerCore::broadcastBIN(uint8_t * payload, size_t length, bool h
 
 bool WebSocketsServerCore::broadcastBIN(const uint8_t * payload, size_t length) {
     return broadcastBIN((uint8_t *)payload, length);
+}
+
+/**
+ * send continuation frame to client
+ * @param num uint8_t client id
+ * @param payload uint8_t *
+ * @param length size_t
+ * @param headerToPayload bool  (see sendFrame for more details)
+ * @param fin bool Is this the final frame?
+ * @return true if ok
+ */
+bool WebSocketsServerCore::sendContinuation(uint8_t num, uint8_t * payload, size_t length, bool headerToPayload, bool fin) {
+    if(num >= WEBSOCKETS_SERVER_CLIENT_MAX) {
+        return false;
+    }
+    WSclient_t * client = &_clients[num];
+    if(clientIsConnected(client)) {
+        return sendFrame(client, WSop_continuation, payload, length, fin, headerToPayload);
+    }
+    return false;
+}
+
+bool WebSocketsServerCore::sendContinuation(uint8_t num, const uint8_t * payload, size_t length, bool fin) {
+    return sendContinuation(num, (uint8_t *)payload, length, fin);
+}
+
+/**
+ * send continuation frame to client all
+ * @param num uint8_t client id
+ * @param payload uint8_t *
+ * @param length size_t
+ * @param headerToPayload bool  (see sendFrame for more details)
+ * @param fin bool Is this the final frame?
+ * @return true if ok
+ */
+bool WebSocketsServerCore::broadcastContinuation(uint8_t * payload, size_t length, bool headerToPayload, bool fin) {
+    WSclient_t * client;
+    bool ret = true;
+    for(uint8_t i = 0; i < WEBSOCKETS_SERVER_CLIENT_MAX; i++) {
+        client = &_clients[i];
+        if(clientIsConnected(client)) {
+            if(!sendFrame(client, WSop_continuation, payload, length, fin, headerToPayload)) {
+                ret = false;
+            }
+        }
+        WEBSOCKETS_YIELD();
+    }
+    return ret;
+}
+
+bool WebSocketsServerCore::broadcastContinuation(const uint8_t * payload, size_t length, bool fin) {
+    return broadcastContinuation((uint8_t *)payload, length, fin);
 }
 
 /**

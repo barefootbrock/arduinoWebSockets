@@ -53,23 +53,29 @@ class WebSocketsServerCore : protected WebSockets {
         const char * mandatoryHttpHeaders[],
         size_t mandatoryHttpHeaderCount);
 
-    bool sendTXT(uint8_t num, uint8_t * payload, size_t length = 0, bool headerToPayload = false);
+    bool sendTXT(uint8_t num, uint8_t * payload, size_t length = 0, bool headerToPayload = false, bool fin = true);
     bool sendTXT(uint8_t num, const uint8_t * payload, size_t length = 0);
     bool sendTXT(uint8_t num, char * payload, size_t length = 0, bool headerToPayload = false);
     bool sendTXT(uint8_t num, const char * payload, size_t length = 0);
     bool sendTXT(uint8_t num, String & payload);
 
-    bool broadcastTXT(uint8_t * payload, size_t length = 0, bool headerToPayload = false);
+    bool broadcastTXT(uint8_t * payload, size_t length = 0, bool headerToPayload = false, bool fin = true);
     bool broadcastTXT(const uint8_t * payload, size_t length = 0);
     bool broadcastTXT(char * payload, size_t length = 0, bool headerToPayload = false);
     bool broadcastTXT(const char * payload, size_t length = 0);
     bool broadcastTXT(String & payload);
 
-    bool sendBIN(uint8_t num, uint8_t * payload, size_t length, bool headerToPayload = false);
+    bool sendBIN(uint8_t num, uint8_t * payload, size_t length, bool headerToPayload = false, bool fin = true);
     bool sendBIN(uint8_t num, const uint8_t * payload, size_t length);
 
-    bool broadcastBIN(uint8_t * payload, size_t length, bool headerToPayload = false);
+    bool broadcastBIN(uint8_t * payload, size_t length, bool headerToPayload = false, bool fin = true);
     bool broadcastBIN(const uint8_t * payload, size_t length);
+
+    bool sendContinuation(uint8_t num, uint8_t * payload, size_t length, bool headerToPayload = false, bool fin = true);
+    bool sendContinuation(uint8_t num, const uint8_t * payload, size_t length, bool fin = true);
+
+    bool broadcastContinuation(uint8_t * payload, size_t length, bool headerToPayload = false, bool fin = true);
+    bool broadcastContinuation(const uint8_t * payload, size_t length, bool fin = true);
 
     bool sendPing(uint8_t num, uint8_t * payload = NULL, size_t length = 0);
     bool sendPing(uint8_t num, String & payload);
